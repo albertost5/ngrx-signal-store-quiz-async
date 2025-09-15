@@ -11,24 +11,26 @@ import { RouterModule } from "@angular/router";
 import { ColorNamePipe } from "./pipes/color-name.pipe";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatSnackBarModule } from "@angular/material/snack-bar";
 
 const sharable: Type<any>[] = [
-    MatIconModule, 
-    MatButtonModule, 
-    MatDialogModule, 
-    MatCardModule, 
-    MatRippleModule, 
+    MatIconModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatCardModule,
+    MatRippleModule,
     MatRadioModule,
     MatTooltipModule,
-    CommonModule, 
-    RouterModule, 
-    ReactiveFormsModule, 
-    ColorNamePipe, 
+    MatSnackBarModule,
+    CommonModule,
+    RouterModule,
+    ReactiveFormsModule,
+    ColorNamePipe,
     MatProgressSpinnerModule
 ]
 
 @NgModule({
-    imports: [...sharable], 
+    imports: [...sharable],
     exports: [...sharable]
 })
 export class SharedModule {

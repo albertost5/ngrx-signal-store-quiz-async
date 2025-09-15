@@ -3,8 +3,10 @@ import { patchState, signalStore, withHooks, withMethods, withProps, withState }
 import { rxMethod } from "@ngrx/signals/rxjs-interop";
 import { pipe, switchMap, tap } from "rxjs";
 import { DictionariesService } from "../services/dictionaries.service";
+import { tapResponse } from '@ngrx/operators';
 import { initialAppSlice } from "./app.slice";
 import { changeLanguage, resetLanguages, setBusy, setDictionary } from "./app.updaters";
+import { NotificationsService } from "../services/notification.service";
 
 export const AppStore = signalStore(
     { providedIn: 'root' },
@@ -14,7 +16,9 @@ export const AppStore = signalStore(
         const _languages = _dictionaries.languages;
 
         return {
-            _dictionaries, _languages
+            _dictionaries,
+            _languages,
+            _notificationsService: inject(NotificationsService),
         }
     }),
     withMethods(store => {
@@ -24,11 +28,16 @@ export const AppStore = signalStore(
             console.log(`Loading dictionary for ${language}`);
             patchState(store, setBusy(true));
           }),
-          switchMap(language => store._dictionaries.getDictionaryWithDelay(language)),
-          tap((dictionary) => {
-            console.log(`Dictionary loaded for ${store.selectedLanguage()}`, dictionary);
-            patchState(store, setBusy(false), setDictionary(dictionary));
-          })
+          switchMap(language => store._dictionaries.getDictionaryWithDelay(language).pipe(tapResponse({
+            next: (dictionary) => {
+              console.log(`Dictionary loaded for ${store.selectedLanguage()}`, dictionary);
+              patchState(store, setBusy(false), setDictionary(dictionary));
+            },
+            error: (error) => {
+              console.error(`Error loading dictionary for ${store.selectedLanguage()}`, error);
+              patchState(store, setBusy(false));
+            }
+          }))),
         )
       );
 
