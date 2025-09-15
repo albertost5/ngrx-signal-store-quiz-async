@@ -1,10 +1,10 @@
-import { computed, inject } from "@angular/core";
-import { patchState, signalStore, withComputed, withHooks, withMethods, withProps, withState } from "@ngrx/signals";
+import { inject } from "@angular/core";
+import { patchState, signalStore, withHooks, withMethods, withProps, withState } from "@ngrx/signals";
+import { rxMethod } from "@ngrx/signals/rxjs-interop";
+import { pipe, switchMap, tap } from "rxjs";
 import { DictionariesService } from "../services/dictionaries.service";
-import { getDictionary } from "./app.helpers";
 import { initialAppSlice } from "./app.slice";
 import { changeLanguage, resetLanguages, setBusy, setDictionary } from "./app.updaters";
-import { firstValueFrom } from "rxjs";
 
 export const AppStore = signalStore(
     { providedIn: 'root' },
@@ -18,20 +18,28 @@ export const AppStore = signalStore(
         }
     }),
     withMethods(store => {
-      const _invalidateDictionary = async() => {
-          patchState(store, setBusy(true));
-          const dicionary = await firstValueFrom(store._dictionaries.getDictionaryWithDelay(store.selectedLanguage()))
-          patchState(store, setDictionary(dicionary), setBusy(false));
-      }
+      const _invalidateDictionary = rxMethod<string>(
+        pipe(
+          tap((language) => {
+            console.log(`Loading dictionary for ${language}`);
+            patchState(store, setBusy(true));
+          }),
+          switchMap(language => store._dictionaries.getDictionaryWithDelay(language)),
+          tap((dictionary) => {
+            console.log(`Dictionary loaded for ${store.selectedLanguage()}`, dictionary);
+            patchState(store, setBusy(false), setDictionary(dictionary));
+          })
+        )
+      );
 
       return {
-        changeLanguage: async() => {
+        changeLanguage: () => {
           patchState(store, changeLanguage(store._languages))
-          await _invalidateDictionary();
+          _invalidateDictionary(store.selectedLanguage());
         },
-        _resetLanguages: async() => {
+        _resetLanguages: () => {
           patchState(store, resetLanguages(store._languages))
-          await _invalidateDictionary();
+          _invalidateDictionary(store.selectedLanguage());
         },
         _invalidateDictionary
       }

@@ -1,14 +1,24 @@
-import { getState, patchState, signalStore, withComputed, withHooks, withMethods, withState } from "@ngrx/signals";
+import { getState, patchState, signalStore, withComputed, withHooks, withMethods, withProps, withState } from "@ngrx/signals";
 import { initialQuizSlice, QuizSlice } from "./quiz.slice";
 import { computed, effect, inject } from "@angular/core";
-import { addAnswer, resetQuiz } from "./quiz.updaters";
+import { addAnswer, resetQuestions, resetQuiz, setBusy } from "./quiz.updaters";
 import { getCorrectCount } from "./quiz.helpers";
 import { translate, translateToPairs } from "../../../store/app.helpers";
 import { QUESTION_CAPTION } from "../../../data/dictionaries";
 import { AppStore } from "../../../store/app.store";
+import { ColorQuizGeneratorService } from "../../../services/color-quiz-generator.service";
+import { rxMethod } from "@ngrx/signals/rxjs-interop";
+import { exhaustMap, pipe, tap } from "rxjs";
 
 export const QuizStore = signalStore(
-    withState(initialQuizSlice), 
+    withState(initialQuizSlice),
+    withProps(_ => {
+      const colorQuizGeneratorService = inject(ColorQuizGeneratorService);
+
+      return {
+        colorQuizGeneratorService
+      }
+    }),
     withComputed((store) => {
         const appStore = inject(AppStore);
         const dictionary = appStore.selectedDictionary;
@@ -24,19 +34,30 @@ export const QuizStore = signalStore(
 
         return {
             currentQuestionIndex,
-            isDone, 
-            currentQuestion, 
-            questionsCount, 
-            correctCount, 
+            isDone,
+            currentQuestion,
+            questionsCount,
+            correctCount,
             title,
             captionColors,
             answerColors
         }
-    }), 
+    }),
     withMethods(store => ({
         addAnswer: (index: number) => patchState(store, addAnswer(index)),
-        reset: () => patchState(store, resetQuiz())
-    })), 
+        reset: () => patchState(store, resetQuiz()),
+        generateQuiz: rxMethod<void>(trigger$ => trigger$.pipe(
+          tap(() => {
+            patchState(store, setBusy(true)),
+            console.log('Generating new quiz...');
+          }),
+          exhaustMap(() => store.colorQuizGeneratorService.createRandomQuizAsync()),
+          tap((questions) => {
+            console.log('New quiz generated.');
+            patchState(store, resetQuestions(questions),setBusy(false))
+          }),
+        ))
+    })),
     withHooks(store => ({
         onInit: () => {
             const stateJson = localStorage.getItem('quiz');

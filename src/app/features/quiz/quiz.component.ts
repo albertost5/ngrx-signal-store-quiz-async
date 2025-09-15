@@ -7,12 +7,13 @@ import { DoneComponent } from './components/done/done.component';
 import { FlagComponent } from '../../components/flag/flag.component';
 import { QuizStore } from './store/quiz.store';
 import { AppStore } from '../../store/app.store';
+import { BusyComponent } from "../../components/busy/busy.component";
 
 @Component({
   selector: 'app-quiz-page',
-  imports: [SharedModule, QuestionPresenterComponent, ToolbarComponent, ProgressComponent, DoneComponent, FlagComponent],
+  imports: [SharedModule, QuestionPresenterComponent, ToolbarComponent, ProgressComponent, DoneComponent, FlagComponent, BusyComponent],
   templateUrl: './quiz.component.html',
-  styleUrl: './quiz.component.scss', 
+  styleUrl: './quiz.component.scss',
 })
 export default class QuizPageComponent {
   readonly appStore = inject(AppStore);
