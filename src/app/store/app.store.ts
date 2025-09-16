@@ -41,15 +41,11 @@ export const AppStore = signalStore(
         )
       );
 
+      _invalidateDictionary(store.selectedLanguage);
+
       return {
-        changeLanguage: () => {
-          patchState(store, changeLanguage(store._languages))
-          _invalidateDictionary(store.selectedLanguage());
-        },
-        _resetLanguages: () => {
-          patchState(store, resetLanguages(store._languages))
-          _invalidateDictionary(store.selectedLanguage());
-        },
+        changeLanguage: () => patchState(store, changeLanguage(store._languages)),
+        _resetLanguages: () => patchState(store, resetLanguages(store._languages)),
         _invalidateDictionary
       }
     }),
