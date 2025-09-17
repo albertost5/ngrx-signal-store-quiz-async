@@ -9,6 +9,8 @@ import { AppStore } from "../../../store/app.store";
 import { ColorQuizGeneratorService } from "../../../services/color-quiz-generator.service";
 import { rxMethod } from "@ngrx/signals/rxjs-interop";
 import { exhaustMap, pipe, tap } from "rxjs";
+import { withDevtools, withLocalStorage } from "@angular-architects/ngrx-toolkit";
+import { withLocalStorageFeature } from "../../../custom-features/with-local-storate.feature";
 
 export const QuizStore = signalStore(
     withState(initialQuizSlice),
@@ -58,21 +60,8 @@ export const QuizStore = signalStore(
           }),
         ))
     })),
-    withHooks(store => ({
-        onInit: () => {
-            const stateJson = localStorage.getItem('quiz');
-            if (stateJson) {
-                const state = JSON.parse(stateJson) as QuizSlice;
-                patchState(store, state);
-            }
-
-            effect(() => {
-                const state = getState(store);
-                const stateJson = JSON.stringify(state);
-                localStorage.setItem('quiz', stateJson);
-            })
-        }
-    }))
+    withLocalStorageFeature('quiz-store'),
+    withDevtools('quiz-store'),
 );
 
 

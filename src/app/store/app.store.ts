@@ -7,6 +7,7 @@ import { tapResponse } from '@ngrx/operators';
 import { initialAppSlice } from "./app.slice";
 import { changeLanguage, resetLanguages, setBusy, setDictionary } from "./app.updaters";
 import { NotificationsService } from "../services/notification.service";
+import { withDevtools } from '@angular-architects/ngrx-toolkit';
 
 export const AppStore = signalStore(
     { providedIn: 'root' },
@@ -53,5 +54,6 @@ export const AppStore = signalStore(
         onInit: () => {
             store._resetLanguages();
         }
-    }))
+    })),
+    withDevtools('app-store'),
 )
