@@ -1,29 +1,30 @@
-import { getState, patchState, signalStore, withComputed, withHooks, withMethods, withProps, withState } from "@ngrx/signals";
-import { initialQuizSlice, QuizSlice } from "./quiz.slice";
-import { computed, effect, inject } from "@angular/core";
-import { addAnswer, resetQuestions, resetQuiz } from "./quiz.updaters";
-import { getCorrectCount } from "./quiz.helpers";
-import { translate, translateToPairs } from "../../../store/app.helpers";
-import { QUESTION_CAPTION } from "../../../data/dictionaries";
-import { AppStore } from "../../../store/app.store";
-import { ColorQuizGeneratorService } from "../../../services/color-quiz-generator.service";
+import { withDevtools } from "@angular-architects/ngrx-toolkit";
+import { computed, inject } from "@angular/core";
+import { patchState, signalStore, withComputed, withMethods, withProps, withState } from "@ngrx/signals";
 import { rxMethod } from "@ngrx/signals/rxjs-interop";
-import { exhaustMap, pipe, tap } from "rxjs";
-import { withDevtools, withLocalStorage } from "@angular-architects/ngrx-toolkit";
-import { withLocalStorageFeature } from "../../../custom-features/with-local-storate.feature";
+import { exhaustMap, generate, tap } from "rxjs";
 import { withBusyFeature } from "../../../custom-features/with-busy/with-busy.feature";
-import { setBusy, setIdle, toggleBusy } from "../../../custom-features/with-busy/with-busy.updaters";
+import { setBusy, setIdle } from "../../../custom-features/with-busy/with-busy.updaters";
+import { withLocalStorageFeature } from "../../../custom-features/with-local-storate.feature";
+import { QUESTION_CAPTION } from "../../../data/dictionaries";
+import { ColorQuizGeneratorService } from "../../../services/color-quiz-generator.service";
+import { translate, translateToPairs } from "../../../store/app.helpers";
+import { AppStore } from "../../../store/app.store";
+import { getCorrectCount } from "./quiz.helpers";
+import { initialQuizSlice } from "./quiz.slice";
+import { addAnswer, resetQuestions, resetQuiz } from "./quiz.updaters";
+import { withService } from "../../../custom-features/with-service/with-service.feature";
 
 export const QuizStore = signalStore(
     withState(initialQuizSlice),
     withBusyFeature(),
-    withProps(_ => {
-      const colorQuizGeneratorService = inject(ColorQuizGeneratorService);
-
-      return {
-        colorQuizGeneratorService
-      }
-    }),
+    withService(
+      () => inject(ColorQuizGeneratorService).createRandomQuizAsync(),
+      (questions) => resetQuestions(questions)
+    ),
+    // withProps(_ => ({
+    //   colorQuizGeneratorService: inject(ColorQuizGeneratorService)
+    // })),
     withComputed((store) => {
         const appStore = inject(AppStore);
         const dictionary = appStore.selectedDictionary;
@@ -51,17 +52,18 @@ export const QuizStore = signalStore(
     withMethods(store => ({
         addAnswer: (index: number) => patchState(store, addAnswer(index)),
         reset: () => patchState(store, resetQuiz()),
-        generateQuiz: rxMethod<void>(trigger$ => trigger$.pipe(
-          tap(() => {
-            patchState(store, setBusy()),
-            console.log('Generating new quiz...');
-          }),
-          exhaustMap(() => store.colorQuizGeneratorService.createRandomQuizAsync()),
-          tap((questions) => {
-            console.log('New quiz generated.');
-            patchState(store, resetQuestions(questions), setIdle())
-          }),
-        ))
+        generateQuiz: () => store._load(),
+        // generateQuiz: rxMethod<void>(trigger$ => trigger$.pipe(
+        //   tap(() => {
+        //     patchState(store, setBusy()),
+        //     console.log('Generating new quiz...');
+        //   }),
+        //   exhaustMap(() => store.colorQuizGeneratorService.createRandomQuizAsync()),
+        //   tap((questions) => {
+        //     console.log('New quiz generated.');
+        //     patchState(store, resetQuestions(questions), setIdle())
+        //   }),
+        // ))
     })),
     withLocalStorageFeature('quiz-store'),
     withDevtools('quiz-store'),
